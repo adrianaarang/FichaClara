@@ -1,8 +1,72 @@
-__pycache__/
-*.pyc
+# =============================================================
+# FichaClara · .gitignore
+# =============================================================
+
+# --- Secretos (NUNCA al repo) ---------------------------------
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# --- Datos generados (se recrean con los scripts) ------------
+# Se ignora el contenido pero se conserva la carpeta con .gitkeep
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/chroma/*
+!data/chroma/.gitkeep
+# Documentos que los usuarios suban desde el frontend
+uploads/
+
+# --- Modelos descargados (Hugging Face, sentence-transformers)
+models/
+.cache/
+*.safetensors
+*.bin
+*.pt
+*.onnx
+
+# --- Resultados de evaluación temporales ---------------------
+evaluation/results/*
+!evaluation/results/.gitkeep
+
+# --- Python ---------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+
+# --- Entornos virtuales ---------------------------------------
 .venv/
-data/raw/
-data/chroma/
-data/processed/*.jsonl
+venv/
+env/
+ENV/
+
+# --- Tests y calidad ------------------------------------------
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Streamlit (config local con secretos) --------------------
+.streamlit/secrets.toml
+
+# --- Logs -----------------------------------------------------
+*.log
+logs/
+
+# --- Editores -------------------------------------------------
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+
+# --- Sistema operativo ----------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
