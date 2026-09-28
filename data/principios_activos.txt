@@ -1,0 +1,285 @@
+# Principios activos del catálogo de FichaClara
+# Uno por línea. Las líneas que empiezan por # se ignoran.
+# Criterio: fármacos frecuentes en residencias, atención primaria y hospitalización.
+# Solo principios activos que se comercializan SOLOS (las combinaciones se descartan).
+# Responsable: P1
+
+# --- Analgesia y antiinflamatorios ---
+paracetamol
+metamizol
+ibuprofeno
+naproxeno
+dexketoprofeno
+diclofenaco
+celecoxib
+tramadol
+tapentadol
+morfina
+oxicodona
+fentanilo
+buprenorfina
+hidromorfona
+
+# --- Anticoagulantes y antiagregantes ---
+acenocumarol
+warfarina
+apixaban
+rivaroxaban
+dabigatran
+edoxaban
+enoxaparina
+bemiparina
+acido acetilsalicilico
+clopidogrel
+ticagrelor
+
+# --- Cardiovascular ---
+enalapril
+ramipril
+lisinopril
+captopril
+perindopril
+losartan
+valsartan
+candesartan
+irbesartan
+olmesartan
+telmisartan
+amlodipino
+nifedipino
+lercanidipino
+diltiazem
+verapamilo
+bisoprolol
+atenolol
+carvedilol
+nebivolol
+metoprolol
+propranolol
+furosemida
+torasemida
+hidroclorotiazida
+clortalidona
+indapamida
+espironolactona
+eplerenona
+digoxina
+amiodarona
+flecainida
+nitroglicerina
+isosorbida mononitrato
+ivabradina
+ranolazina
+doxazosina
+
+# --- Lípidos ---
+atorvastatina
+simvastatina
+rosuvastatina
+pravastatina
+pitavastatina
+ezetimiba
+fenofibrato
+
+# --- Diabetes ---
+metformina
+sitagliptina
+linagliptina
+vildagliptina
+saxagliptina
+empagliflozina
+dapagliflozina
+canagliflozina
+gliclazida
+glimepirida
+repaglinida
+pioglitazona
+insulina glargina
+insulina degludec
+insulina detemir
+insulina aspart
+insulina lispro
+semaglutida
+liraglutida
+dulaglutida
+
+# --- Digestivo ---
+omeprazol
+pantoprazol
+esomeprazol
+lansoprazol
+rabeprazol
+famotidina
+metoclopramida
+domperidona
+ondansetron
+lactulosa
+macrogol
+lactitol
+loperamida
+mesalazina
+almagato
+ursodesoxicolico
+butilescopolamina
+
+# --- Respiratorio ---
+salbutamol
+terbutalina
+ipratropio
+tiotropio
+umeclidinio
+glicopirronio
+budesonida
+beclometasona
+fluticasona
+formoterol
+salmeterol
+indacaterol
+montelukast
+acetilcisteina
+roflumilast
+
+# --- Sistema nervioso: ansiolíticos e hipnóticos ---
+lorazepam
+alprazolam
+diazepam
+clonazepam
+lormetazepam
+bromazepam
+clorazepato
+zolpidem
+clometiazol
+melatonina
+
+# --- Antidepresivos ---
+trazodona
+mirtazapina
+sertralina
+escitalopram
+citalopram
+paroxetina
+fluoxetina
+venlafaxina
+desvenlafaxina
+duloxetina
+vortioxetina
+agomelatina
+amitriptilina
+bupropion
+
+# --- Antipsicóticos ---
+quetiapina
+risperidona
+olanzapina
+haloperidol
+aripiprazol
+paliperidona
+tiaprida
+clozapina
+
+# --- Demencia y Parkinson ---
+donepezilo
+rivastigmina
+galantamina
+memantina
+rasagilina
+pramipexol
+ropinirol
+rotigotina
+
+# --- Antiepilépticos y dolor neuropático ---
+levetiracetam
+valproico
+carbamazepina
+oxcarbazepina
+lamotrigina
+lacosamida
+gabapentina
+pregabalina
+topiramato
+fenitoina
+litio
+
+# --- Urología ---
+tamsulosina
+silodosina
+alfuzosina
+finasterida
+dutasterida
+solifenacina
+oxibutinina
+mirabegron
+fesoterodina
+tolterodina
+tadalafilo
+
+# --- Endocrino y hueso ---
+levotiroxina
+tiamazol
+prednisona
+metilprednisolona
+dexametasona
+hidrocortisona
+deflazacort
+alendronico
+risedronico
+ibandronico
+zoledronico
+denosumab
+colecalciferol
+calcifediol
+teriparatida
+
+# --- Antiinfecciosos ---
+amoxicilina
+cloxacilina
+cefuroxima
+cefixima
+ceftriaxona
+cefazolina
+azitromicina
+claritromicina
+levofloxacino
+ciprofloxacino
+moxifloxacino
+fosfomicina
+nitrofurantoina
+doxiciclina
+clindamicina
+metronidazol
+linezolid
+vancomicina
+fluconazol
+nistatina
+aciclovir
+valaciclovir
+oseltamivir
+
+# --- Hematología, vitaminas y electrolitos ---
+sulfato ferroso
+hierro sacarosa
+acido folico
+cianocobalamina
+potasio cloruro
+eritropoyetina
+
+# --- Gota ---
+alopurinol
+febuxostat
+colchicina
+
+# --- Antihistamínicos ---
+cetirizina
+levocetirizina
+loratadina
+desloratadina
+ebastina
+bilastina
+dexclorfeniramina
+hidroxizina
+
+# --- Oftalmología ---
+latanoprost
+timolol
+brimonidina
+dorzolamida

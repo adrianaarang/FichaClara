@@ -102,10 +102,12 @@ class CimaClient:
     # ------------------------------------------------------------------ públicos
 
     def buscar(self, nombre: str | None = None, principio_activo: str | None = None,
-               solo_comercializados: bool = True, pagina: int = 1) -> list[dict]:
+               solo_comercializados: bool = True, un_solo_principio_activo: bool = False,
+               pagina: int = 1) -> list[dict]:
         """Busca medicamentos autorizados por nombre o principio activo.
 
         Devuelve la lista 'resultados' de CIMA tal cual (dicts con nregistro, nombre, docs...).
+        Con un_solo_principio_activo=True descarta las combinaciones (p. ej. paracetamol + cafeína).
         """
         if not nombre and not principio_activo:
             raise ValueError("Indica un nombre o un principio activo")
@@ -116,6 +118,8 @@ class CimaClient:
             params["practiv1"] = principio_activo
         if solo_comercializados:
             params["comerc"] = 1
+        if un_solo_principio_activo:
+            params["npactiv"] = 1
         datos = self._get_json("medicamentos", params)
         return datos.get("resultados", []) if isinstance(datos, dict) else []
 
@@ -164,6 +168,20 @@ class CimaClient:
         temporal.replace(destino)
         logger.info("Descargada: %s (%d KB)", destino.name, len(resp.content) // 1024)
         return destino
+
+    def principios_activos(self, max_paginas: int = 100) -> list[str]:
+        """Todos los principios activos de la maestra de CIMA (maestra=1), paginando."""
+        nombres: list[str] = []
+        for pagina in range(1, max_paginas + 1):
+            datos = self._get_json("maestras", {"maestra": 1, "pagina": pagina})
+            resultados = datos.get("resultados", []) if isinstance(datos, dict) else datos or []
+            if not resultados:
+                break
+            nombres += [r["nombre"] for r in resultados if r.get("nombre")]
+            total = datos.get("totalFilas") if isinstance(datos, dict) else None
+            if total is not None and len(nombres) >= total:
+                break
+        return nombres
 
     def secciones_oficiales(self, nregistro: str) -> list[dict]:
         """Lista de secciones de la ficha según CIMA (sin contenido).
