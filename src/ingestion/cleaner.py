@@ -49,6 +49,7 @@ RE_GUION_FIN = re.compile(r"([a-záéíóúüñ])-\n([a-záéíóúüñ])")     
 RE_FLECHA_VACIA = re.compile(r"\s+—\s*$")                                 # fila de tabla sin valores
 RE_ENCABEZADO = re.compile(r"^\d{1,2}(?:\.\d{1,2}){0,2}\.? +[A-ZÁÉÍÓÚÑ]")        # "4.2. Posología" (no "48 horas")
 RE_ESPACIO_ANTES_PUNTO = re.compile(r"^(\d{1,2}) \.(?=\s)")                   # "6 . DATOS" → "6. DATOS"
+RE_REFERENCIA_ABIERTA = re.compile(r"\b(?:secci[oó]n(?:es)?|apartados?|y|o|e)$", re.IGNORECASE)  # "…de la sección"
 RE_TITULO = re.compile(r"^\d{1,2}(?:\.\d{1,2}){0,2}\.? +\S")                  # "4.2. Posología", "10. FECHA"
 
 
@@ -128,12 +129,22 @@ def unir_vinetas_y_titulos(lineas: list[str]) -> list[str]:
         if pendiente is not None:
             if not linea:
                 continue  # salta líneas en blanco entre "4.2" y "Posología"
-            resultado.append(f"{pendiente} {linea}")
+            if RE_ENCABEZADO.match(linea):
+                resultado.append(pendiente)  # nunca "4.2." + "4.5. Interacción..." en la misma línea
+                resultado.append(linea)
+            else:
+                resultado.append(f"{pendiente} {linea}")
             pendiente = None
         elif RE_VINETA_SOLA.match(linea):
             pendiente = "•" if linea != "-" else "-"
         elif RE_NUMERO_SECCION.match(linea) and "." in linea:
-            pendiente = linea
+            anterior = next((r for r in reversed(resultado) if r), "")
+            if RE_REFERENCIA_ABIERTA.search(anterior):
+                # Es el final de una frase: "…seguir la recomendación de la sección" + "4.2."
+                idx = max(i for i, r in enumerate(resultado) if r)
+                resultado[idx] = f"{anterior} {linea}"
+            else:
+                pendiente = linea
         else:
             resultado.append(linea)
     if pendiente is not None:
