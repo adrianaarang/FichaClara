@@ -10,8 +10,8 @@ Métrica clave: cuántos chunks mezclan contenido de más de una sección numera
 que el troceo por sección evita por construcción, y el motivo por el que un
 fragmento de 4.8 "no dice de qué fármaco habla" si se trocea por tamaño fijo.
 
-Nota: la comparación "de verdad" (hit rate@k con el golden set de P5, ver plan del
-proyecto) necesita el retriever de P2 y todavía no está disponible
+Nota: la comparación "de verdad" (hit rate@k con el golden set de Yohana, ver plan del
+proyecto) necesita el retriever de David y todavía no está disponible
 (evaluation/golden_set.jsonl está vacío). Este experimento mide un proxy que no
 depende de nadie más: la pureza de sección de cada chunk y si las secciones clave
 quedan enteras en un único fragmento, que es la propiedad que motiva la decisión
@@ -44,7 +44,11 @@ from src.ingestion.chunker import (
     trocear_documento,
 )
 from src.ingestion.cleaner import limpiar_documento
-from src.ingestion.loaders import DocumentoCargado, DocumentoIlegibleError, cargar_documento
+from src.ingestion.loaders import (
+    DocumentoCargado,
+    DocumentoIlegibleError,
+    cargar_documento,
+)
 
 CLAVE = ("4.1", "4.2", "4.3", "4.4", "4.5", "4.8")
 INFORME = Path("docs/resultados/experimento_chunking.csv")
@@ -152,7 +156,7 @@ def resumir(nombre: str, acumulado: list[tuple[list[int], int, dict[str, int]]])
     mezclas = sum(m for _, m, _ in acumulado)
     claves_totales, claves_enteras = 0, 0
     for _, _, por_seccion in acumulado:
-        for n, n_chunks_seccion in por_seccion.items():
+        for n_chunks_seccion in por_seccion.values():
             claves_totales += 1
             if n_chunks_seccion <= 1:
                 claves_enteras += 1
