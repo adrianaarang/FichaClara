@@ -50,6 +50,7 @@ RE_FLECHA_VACIA = re.compile(r"\s+—\s*$")                                 # fi
 RE_ENCABEZADO = re.compile(r"^\d{1,2}(?:\.\d{1,2}){0,2}\.? +[A-ZÁÉÍÓÚÑ]")        # "4.2. Posología" (no "48 horas")
 RE_ESPACIO_ANTES_PUNTO = re.compile(r"^(\d{1,2}) \.(?=\s)")                   # "6 . DATOS" → "6. DATOS"
 RE_REFERENCIA_ABIERTA = re.compile(r"\b(?:secci[oó]n(?:es)?|apartados?|y|o|e)$", re.IGNORECASE)  # "…de la sección"
+RE_TITULO_CORTADO = re.compile(r"(?:\b(?:DE|DEL|LA|LAS|LOS|EL|Y|E|O|EN|CON|PARA|POR)|[/,-])$")
 RE_TITULO = re.compile(r"^\d{1,2}(?:\.\d{1,2}){0,2}\.? +\S")                  # "4.2. Posología", "10. FECHA"
 
 
@@ -96,10 +97,15 @@ def quitar_numeros_de_pagina(paginas: list[Pagina]) -> list[Pagina]:
     for p in paginas:
         lineas = p.texto.splitlines()
         con_texto = [i for i, linea in enumerate(lineas) if linea.strip()]
-        for i in con_texto[:2] + con_texto[-2:]:
-            # Sin punto: "4." o "4.2" son títulos de sección, "29" o "3 de 8" son nº de página
+        for pos, i in enumerate(con_texto):
+            if 2 <= pos < len(con_texto) - 2:
+                continue  # solo miramos las 2 primeras y las 2 últimas líneas con texto
+            # Sin punto: "4." o "4.2" son títulos de sección, "29" o "3 de 8" son nº de página…
             if RE_NUMERO_PAGINA.match(lineas[i]) and "." not in lineas[i]:
-                lineas[i] = ""
+                siguiente = lineas[con_texto[pos + 1]].strip() if pos + 1 < len(con_texto) else ""
+                titulo_ema = re.fullmatch(r"\d{1,2}", lineas[i].strip()) and _parece_titulo_mayusculas(siguiente)
+                if not titulo_ema:  # …salvo "1" + "NOMBRE DEL MEDICAMENTO" (EMA sin punto)
+                    lineas[i] = ""
         resultado.append(Pagina(p.numero, "\n".join(lineas)))
     return resultado
 
@@ -121,11 +127,16 @@ def quitar_lineas_repetidas(paginas: list[Pagina], umbral: float = 0.6) -> list[
             for p in paginas]
 
 
+def _parece_titulo_mayusculas(linea: str) -> bool:
+    """'NOMBRE DEL MEDICAMENTO', 'DATOS CLÍNICOS'… (empieza por letra y está en mayúsculas)."""
+    return len(linea) > 5 and linea[0].isalpha() and linea.isupper()
+
+
 def unir_vinetas_y_titulos(lineas: list[str]) -> list[str]:
     """Une una viñeta o un número de sección sueltos con la siguiente línea con texto."""
     resultado: list[str] = []
     pendiente: str | None = None
-    for linea in lineas:
+    for k, linea in enumerate(lineas):
         if pendiente is not None:
             if not linea:
                 continue  # salta líneas en blanco entre "4.2" y "Posología"
@@ -137,6 +148,9 @@ def unir_vinetas_y_titulos(lineas: list[str]) -> list[str]:
             pendiente = None
         elif RE_VINETA_SOLA.match(linea):
             pendiente = "•" if linea != "-" else "-"
+        elif re.fullmatch(r"\d{1,2}", linea) and _parece_titulo_mayusculas(
+                next((x for x in lineas[k + 1:] if x), "")):
+            pendiente = linea  # EMA sin punto: "1" + "NOMBRE DEL MEDICAMENTO" → "1 NOMBRE DEL MEDICAMENTO"
         elif RE_NUMERO_SECCION.match(linea) and "." in linea:
             anterior = next((r for r in reversed(resultado) if r), "")
             if RE_REFERENCIA_ABIERTA.search(anterior):
@@ -169,9 +183,11 @@ def unir_lineas_de_parrafo(texto: str) -> str:
             resultado.append(linea)
         elif RE_TITULO.match(anterior):
             # Un título solo se une con su propia continuación en mayúsculas
-            # ("9. FECHA DE LA PRIMERA AUTORIZACIÓN/RENOVACIÓN DE LA" + "AUTORIZACIÓN"),
-            # nunca con el texto de la sección ("10. FECHA DE LA REVISIÓN DEL TEXTO" + "noviembre 2023").
-            if linea.isupper() and anterior.split(" ", 1)[-1].isupper():
+            # cuando el título quedó cortado ("9. FECHA DE LA PRIMERA AUTORIZACIÓN/RENOVACIÓN DE LA" +
+            # "AUTORIZACIÓN"). Nunca con el texto de la sección ("7. TITULAR…" + "LABORATORIOS NORMON")
+            # ni con el título siguiente ("8. NÚMERO(S)…" + "9. FECHA…").
+            if (linea.isupper() and anterior.split(" ", 1)[-1].isupper()
+                    and RE_TITULO_CORTADO.search(anterior) and not RE_ENCABEZADO.match(linea)):
                 resultado[-1] = f"{anterior} {linea}"
             else:
                 resultado.append(linea)
