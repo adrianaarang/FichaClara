@@ -87,8 +87,8 @@ Métricas:
   4.5 y 4.8, cuántas quedan completas en un solo fragmento (sin partir su contenido entre
   varios chunks, lo que puede hacer que el fragmento recuperado se quede a medias).
 
-> La comparación completa por *hit rate@k* con el golden set de evaluación (P5) queda
-> pendiente de que existan el retriever (P2) y el golden set
+> La comparación completa por *hit rate@k* con el golden set de evaluación (Yohana) queda
+> pendiente de que existan el retriever (David) y el golden set
 > (`evaluation/golden_set.jsonl`, todavía vacío en el momento de escribir esto). Estas dos
 > métricas no dependen de ningún otro módulo y ya muestran por qué el troceo por sección es
 > mejor para este caso de uso; cuando el retriever esté listo, este script se puede ampliar
