@@ -104,3 +104,22 @@ def test_numero_tras_una_direccion_sigue_siendo_titulo():
     # Caso real EMA: "Islandia" / "8." / "NÚMERO(S) DE AUTORIZACIÓN…"
     t = limpiar_texto("220 Hafnarfjörður\nIslandia\n8.\n\nNÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN")
     assert "8. NÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN" in t.splitlines()
+
+
+def test_titulo_ema_sin_punto():
+    # Caso real (Hemangiol, FT_114919001): "1" / "NOMBRE DEL MEDICAMENTO" al principio de la página
+    paginas = quitar_numeros_de_pagina([Pagina(1, "1 \nNOMBRE DEL MEDICAMENTO \n \nHEMANGIOL 3,75 mg/ml\n2 \nCOMPOSICIÓN")])
+    assert limpiar_texto(paginas[0].texto).splitlines()[:3] == [
+        "1 NOMBRE DEL MEDICAMENTO", "", "HEMANGIOL 3,75 mg/ml"]
+
+
+def test_titulos_seguidos_no_se_juntan():
+    # Casos reales (FT_74362, FT_46186): títulos 7-10 en líneas seguidas
+    t = limpiar_texto("7. TITULAR DE LA AUTORIZACIÓN DE COMERCIALIZACIÓN\nLABORATORIOS NORMON, S.A.\n"
+                      "8. NÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN\n"
+                      "9. FECHA DE LA PRIMERA AUTORIZACIÓN/ RENOVACIÓN DE LA AUTORIZACIÓN\n"
+                      "10. FECHA DE LA REVISIÓN DEL TEXTO\nJunio 2024")
+    assert t.splitlines() == ["7. TITULAR DE LA AUTORIZACIÓN DE COMERCIALIZACIÓN", "LABORATORIOS NORMON, S.A.",
+                              "8. NÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN",
+                              "9. FECHA DE LA PRIMERA AUTORIZACIÓN/ RENOVACIÓN DE LA AUTORIZACIÓN",
+                              "10. FECHA DE LA REVISIÓN DEL TEXTO", "Junio 2024"]
