@@ -145,6 +145,13 @@ def _celda(c: str | None) -> str:
     return re.sub(r"\s+", " ", (c or "").replace("-\n", "-")).strip()
 
 
+def _parece_cabecera(fila: list[str]) -> bool:
+    if not all(fila):
+        return False
+    longitudes = [len(c) for c in fila]
+    return max(longitudes) <= 80 and sum(longitudes) / len(longitudes) <= 45
+
+
 def tabla_a_texto(filas: list[list[str | None]], cabecera_previa: list[str] | None = None
                   ) -> tuple[str, list[str] | None]:
     """Convierte una tabla en líneas legibles para el embedding y el LLM.
@@ -165,8 +172,10 @@ def tabla_a_texto(filas: list[list[str | None]], cabecera_previa: list[str] | No
     # 2) Continuación de una tabla de la página anterior (mismo nº de columnas)
     elif cabecera_previa and len(cabecera_previa) == ncol and filas[0][0] != cabecera_previa[0]:
         cabecera, datos = cabecera_previa, filas
-    # 3) Tabla normal: la primera fila es la cabecera si está completa
-    elif ncol > 1 and all(filas[0]) and len(filas) > 1:
+    # 3) Tabla normal: la primera fila es la cabecera si está completa y parece un título
+    #    (celdas cortas). Si no, es una fila de datos: p. ej. en Lopresor la primera fila es
+    #    "Exploraciones complementarias Muy raras | Aumento de peso, alteraciones en las pruebas..."
+    elif ncol > 1 and len(filas) > 1 and _parece_cabecera(filas[0]):
         cabecera, datos = filas[0], filas[1:]
     else:
         cabecera, datos = None, filas
