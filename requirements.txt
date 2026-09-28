@@ -1,0 +1,22 @@
+# Responsable: P5 (cada persona añade sus dependencias vía PR)
+# Versiones a fijar el día 1
+langchain
+langchain-community
+langchain-chroma
+langchain-huggingface
+langchain-groq
+langchain-ollama
+chromadb
+sentence-transformers
+rank-bm25
+pymupdf
+requests
+pydantic
+pydantic-settings
+fastapi
+uvicorn
+python-multipart
+streamlit
+pytest
+httpx
+ruff

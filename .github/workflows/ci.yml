@@ -1,0 +1,2 @@
+# Responsable: P5
+# TODO: en cada PR → instalar deps, ruff, pytest (sin llamar a APIs externas: usar mocks)
