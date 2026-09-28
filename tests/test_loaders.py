@@ -134,3 +134,12 @@ def test_tabla_normal_usa_primera_fila_como_cabecera():
     texto, _ = tabla_a_texto([["Peso corporal", "Dosis"], [">40 kg", "75 mg dos veces al día"]])
     assert "[Tabla] Peso corporal | Dosis" in texto
     assert ">40 kg — Dosis: 75 mg dos veces al día" in texto
+
+
+def test_primera_fila_larga_no_es_cabecera():
+    # Caso real de Lopresor: la tabla 4.8 no tiene cabecera
+    filas = [["Exploraciones complementarias Muy raras", "Aumento de peso, alteraciones en las pruebas de función hepática"],
+             ["Trastornos cardíacos Frecuentes", "Bradicardia"]]
+    texto, cab = tabla_a_texto(filas)
+    assert cab is None
+    assert texto.splitlines()[1] == "Trastornos cardíacos Frecuentes | Bradicardia"
