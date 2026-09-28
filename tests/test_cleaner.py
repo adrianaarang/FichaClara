@@ -91,3 +91,16 @@ def test_espacio_antes_del_punto_en_titulo():
 def test_no_une_filas_de_tabla():
     t = "Dosis prescrita — Semana 1: 1 mg/kg\n10 kg — Semana 1: 1 ml"
     assert limpiar_texto(t) == t
+
+
+def test_numero_de_seccion_al_final_de_una_frase():
+    # Caso real de Hidroferol: "…de la sección" / "4.2." / "4.5. Interacción…"
+    t = limpiar_texto("se debe seguir la recomendación posológica de la sección\n4.2.\n\n4.5. Interacción con otros medicamentos")
+    assert t.splitlines() == ["se debe seguir la recomendación posológica de la sección 4.2.",
+                              "", "4.5. Interacción con otros medicamentos"]
+
+
+def test_numero_tras_una_direccion_sigue_siendo_titulo():
+    # Caso real EMA: "Islandia" / "8." / "NÚMERO(S) DE AUTORIZACIÓN…"
+    t = limpiar_texto("220 Hafnarfjörður\nIslandia\n8.\n\nNÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN")
+    assert "8. NÚMERO(S) DE AUTORIZACIÓN DE COMERCIALIZACIÓN" in t.splitlines()
