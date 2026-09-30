@@ -1,32 +1,24 @@
-"""Tests de la cadena con LLM mockeado.
+"""Tests unitarios e integración para la cadena RAG (P3)."""
 
-Responsable: P3 · Orquestación LLM y API
-"""
+import pytest
 
-# TODO:
-
-from src.generation.llm_providers import GroqProvider
-from src.generation.prompts import SystemPrompt
+from src.common.config import settings
+from src.common.schemas import QueryRequest, QueryResponse
+from src.generation.llm_providers import get_llm
 from src.generation.rag_chain import RAGChain
 
 
-def test_rag_chain():
-    system_prompt = SystemPrompt()
-    llm_provider = GroqProvider("dummy_key")
-    rag_chain = RAGChain(system_prompt, llm_provider)
+def test_rag_chain_answer_basic():
+    chain = RAGChain()
+    request = QueryRequest(pregunta="¿Cuál es la dosis recomendada de paracetamol?", k=4)
+    response = chain.answer(request)
 
-    response = rag_chain.answer("Test question")
-    assert response.found == True
-    assert response.answer != ""
-    assert response.sources != []
+    assert isinstance(response, QueryResponse)
+    assert response.encontrado is True
+    assert len(response.fuentes) > 0
 
-def test_invalid_provider():
-    import os
 
-    from src.generation.llm_providers import get_llm_provider
-    os.environ["LLM_PROVIDER"] = "invalid"
-    try:
-        get_llm_provider()
-        assert False
-    except ValueError:
-        assert True
+def test_invalid_provider(monkeypatch):
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "invalid")
+    with pytest.raises(ValueError, match="Proveedor de LLM no soportado"):
+        get_llm()
