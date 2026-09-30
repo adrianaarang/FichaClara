@@ -1,5 +1,7 @@
 """Tests unitarios e integración para la cadena RAG (P3)."""
 
+from unittest.mock import MagicMock, patch
+
 import pytest
 
 from src.common.config import settings
@@ -9,13 +11,21 @@ from src.generation.rag_chain import RAGChain
 
 
 def test_rag_chain_answer_basic():
-    chain = RAGChain()
-    request = QueryRequest(pregunta="¿Cuál es la dosis recomendada de paracetamol?", k=4)
-    response = chain.answer(request)
+    # Crear un mock del LLM para no depender de Ollama o red en CI/CD
+    mock_llm = MagicMock()
+    mock_response = MagicMock()
+    mock_response.content = "La dosis recomendada es 1g cada 8 horas [1]."
+    mock_llm.invoke.return_value = mock_response
 
-    assert isinstance(response, QueryResponse)
-    assert response.encontrado is True
-    assert len(response.fuentes) > 0
+    with patch("src.generation.rag_chain.get_llm", return_value=(mock_llm, "ollama/mock")):
+        chain = RAGChain()
+        request = QueryRequest(pregunta="¿Cuál es la dosis recomendada de paracetamol?", k=4)
+        response = chain.answer(request)
+
+        assert isinstance(response, QueryResponse)
+        assert response.encontrado is True
+        assert len(response.fuentes) > 0
+        assert response.modelo == "ollama/mock"
 
 
 def test_invalid_provider(monkeypatch):
