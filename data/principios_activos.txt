@@ -29,7 +29,7 @@ dabigatran
 edoxaban
 enoxaparina
 bemiparina
-acido acetilsalicilico
+acetilsalicilico
 clopidogrel
 ticagrelor
 
@@ -96,7 +96,7 @@ repaglinida
 pioglitazona
 insulina glargina
 insulina degludec
-insulina detemir
+# insulina detemir  -- discontinuada en España (CIMA: no comercializada)
 insulina aspart
 insulina lispro
 semaglutida
@@ -119,7 +119,7 @@ lactitol
 loperamida
 mesalazina
 almagato
-ursodesoxicolico
+ursodeoxicolico
 butilescopolamina
 
 # --- Respiratorio ---
@@ -256,11 +256,11 @@ valaciclovir
 oseltamivir
 
 # --- Hematología, vitaminas y electrolitos ---
-sulfato ferroso
+hierro sulfato
 hierro sacarosa
 acido folico
 cianocobalamina
-potasio cloruro
+cloruro de potasio
 eritropoyetina
 
 # --- Gota ---
