@@ -1,7 +1,9 @@
 from langchain_core.language_models import BaseChatModel
 from langchain_groq import ChatGroq
 from langchain_ollama import ChatOllama
+
 from src.common.config import settings
+
 
 def get_llm() -> tuple[BaseChatModel, str]:
     """Retorna una instancia del LLM según la configuración y el nombre del modelo."""

@@ -1,5 +1,6 @@
 # src/generation/prompts.py
 from langchain_core.prompts import ChatPromptTemplate
+
 from src.common.schemas import Fuente
 
 FRASE_NO_CONSTA = "No consta en las fichas técnicas consultadas."

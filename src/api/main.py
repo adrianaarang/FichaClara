@@ -8,8 +8,12 @@ Responsable: P3 · Orquestación LLM y API
 # src/api/main.py
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from src.common.schemas import (
-    QueryRequest, QueryResponse, IngestResponse, DocumentoIndexado
+    DocumentoIndexado,
+    IngestResponse,
+    QueryRequest,
+    QueryResponse,
 )
 from src.generation.rag_chain import RAGChain
 
@@ -37,8 +41,10 @@ def health():
 def query(request: QueryRequest):
     try:
         return rag_chain.answer(request)
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
 
 @app.post("/ingest", response_model=IngestResponse)
 def ingest():
