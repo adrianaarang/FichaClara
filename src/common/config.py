@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     OLLAMA_MODEL: str = "qwen2.5-coder:14b"
 
     # Configuración de embeddings y ChromaDB
-    EMBEDDING_MODEL: str = "nomic-embed-text"
+    EMBEDDING_MODEL: str = "BAAI/bge-m3"
     CHROMA_DIR: str = "data/chroma"
     CHROMA_COLLECTION: str = "fichas_tecnicas"
 

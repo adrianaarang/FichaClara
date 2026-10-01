@@ -59,7 +59,7 @@ class RAGChain:
         )
 
         # 2. Retrieval (David - P2 / FakeRetriever)
-        k_val = request.k if request.k is not None else settings.DEFAULT_K
+        k_val = request.k if request.k is not None else settings.RETRIEVER_K
         retrieved = fake_retrieve(texto_pregunta, k=k_val)
 
         # Criterio de Aceptación: Sin contexto -> encontrado=False sin llamar al LLM
