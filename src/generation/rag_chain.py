@@ -1,9 +1,9 @@
-"""Cadena LangChain (LCEL): retriever → prompt → LLM → respuesta + fuentes.
-
-Responsable: P3 · Orquestación LLM y API
-"""
-
+# src/generation/rag_chain.py
 import re
+import logging
+from typing import Any
+
+from langchain_core.output_parsers import StrOutputParser
 
 from src.common.config import settings
 from src.common.schemas import (
@@ -18,10 +18,10 @@ from src.common.schemas import (
 from src.generation.llm_providers import get_llm
 from src.generation.prompts import FRASE_NO_CONSTA, RAG_PROMPT, formatear_contexto
 
+logger = logging.getLogger(__name__)
 
-# --- FakeRetriever para pruebas iniciales hasta que P2 entregue ---
+
 def fake_retrieve(pregunta: str, k: int = 4) -> list[RetrievedChunk]:
-    # Mock que simula la respuesta de David (P2)
     meta = ChunkMetadata(
         chunk_id="FT_1234::4.2::1",
         doc_id="FT_1234",
@@ -40,39 +40,15 @@ def fake_retrieve(pregunta: str, k: int = 4) -> list[RetrievedChunk]:
     return [RetrievedChunk(chunk=chunk, score=0.92)]
 
 
-# --- MOCK PII hasta que P5 entregue ---
 def fake_check_pii(pregunta: str) -> PiiResult:
     return PiiResult(contiene_pii=False, tipos=[], texto_enmascarado=pregunta)
 
 
 class RAGChain:
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
-    def answer(self, request: QueryRequest) -> QueryResponse:
-        # 1. Filtro PII (Yohana - P5)
-        pii_res = fake_check_pii(request.pregunta)
-        texto_pregunta = (
-            pii_res.texto_enmascarado
-            if pii_res.contiene_pii
-            else request.pregunta
-        )
-
-        # 2. Retrieval (David - P2 / FakeRetriever)
-        k_val = request.k if request.k is not None else settings.RETRIEVER_K
-        retrieved = fake_retrieve(texto_pregunta, k=k_val)
-
-        # Criterio de Aceptación: Sin contexto -> encontrado=False sin llamar al LLM
-        if not retrieved:
-            return QueryResponse(
-                respuesta=FRASE_NO_CONSTA,
-                encontrado=False,
-                fuentes=[],
-                aviso_pii=pii_res.contiene_pii,
-                modelo=None,
-            )
-
-        # 3. Mapear Chunks a Fuentes para P4 (Anas)
+    def _mapear_fuentes(self, retrieved: list[RetrievedChunk]) -> list[Fuente]:
         fuentes: list[Fuente] = []
         for idx, r_chunk in enumerate(retrieved, start=1):
             meta = r_chunk.chunk.metadata
@@ -90,17 +66,55 @@ class RAGChain:
                     score=r_chunk.score,
                 )
             )
+        return fuentes
 
-        # 4. Invocar LLM con manejo de excepciones (timeouts/caídas)
+    def _limpiar_citas_fantasmas(self, respuesta: str, indices_validos: set[int]) -> str:
+        def filtrar_cita(match: re.Match) -> str:
+            idx = int(match.group(1))
+            return match.group(0) if idx in indices_validos else ""
+
+        return re.sub(r"\[(\d+)\]", filtrar_cita, respuesta)
+
+    def answer(self, request: QueryRequest) -> QueryResponse:
+        # 1. Filtro PII
+        pii_res = fake_check_pii(request.pregunta)
+        texto_pregunta = (
+            pii_res.texto_enmascarado
+            if pii_res.contiene_pii
+            else request.pregunta
+        )
+
+        # 2. Retrieval
+        k_val = request.k if request.k is not None else settings.RETRIEVER_K
+        retrieved = fake_retrieve(texto_pregunta, k=k_val)
+
+        # Criterio de Aceptación: Sin contexto -> no invocar LLM
+        if not retrieved:
+            return QueryResponse(
+                respuesta=FRASE_NO_CONSTA,
+                encontrado=False,
+                fuentes=[],
+                aviso_pii=pii_res.contiene_pii,
+                modelo=None,
+            )
+
+        # 3. Preparación de fuentes e insumos para el Prompt
+        fuentes = self._mapear_fuentes(retrieved)
+        contexto_str = formatear_contexto(fuentes)
+
+        # 4. Construcción y Ejecución de Cadena LCEL
         try:
             llm, model_name = get_llm()
-            contexto_str = formatear_contexto(fuentes)
-            prompt_value = RAG_PROMPT.format_messages(
-                contexto=contexto_str, pregunta=texto_pregunta
-            )
-            response_message = llm.invoke(prompt_value)
-            respuesta_texto = str(response_message.content)
-        except Exception:  # noqa: BLE001
+            
+            # Composición de Cadena Declarativa LCEL
+            chain = RAG_PROMPT | llm | StrOutputParser()
+            
+            respuesta_texto = chain.invoke({
+                "contexto": contexto_str,
+                "pregunta": texto_pregunta
+            })
+        except Exception as exc:
+            logger.error(f"Error al invocar la cadena LCEL: {exc}", exc_info=True)
             return QueryResponse(
                 respuesta="Error temporal al consultar el modelo de lenguaje.",
                 encontrado=False,
@@ -109,14 +123,9 @@ class RAGChain:
                 modelo=None,
             )
 
-        # 5. Validación posterior de citas [n]: eliminar citas fantasmas que no existan
+        # 5. Post-procesamiento
         indices_validos = {f.indice for f in fuentes}
-
-        def filtrar_cita(match):
-            idx = int(match.group(1))
-            return match.group(0) if idx in indices_validos else ""
-
-        respuesta_limpia = re.sub(r"\[(\d+)\]", filtrar_cita, respuesta_texto)
+        respuesta_limpia = self._limpiar_citas_fantasmas(respuesta_texto, indices_validos)
 
         return QueryResponse(
             respuesta=respuesta_limpia,
