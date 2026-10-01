@@ -7,7 +7,9 @@ from functools import lru_cache
 
 from langchain_huggingface import HuggingFaceEmbeddings
 
-DEFAULT_EMBEDDING_MODEL = "BAAI/bge-m3"
+from src.common.config import settings
+
+DEFAULT_EMBEDDING_MODEL = settings.EMBEDDING_MODEL
 
 
 @lru_cache(maxsize=4)
@@ -25,8 +27,8 @@ def get_embeddings(
         A configured HuggingFaceEmbeddings instance.
 
     Notes:
-        Configuration is passed explicitly so this module does not depend on
-        the application's environment/settings implementation.
+        The default model comes from the central application settings.
+        An explicit model name can still be provided for experiments or tests.
 
         Embeddings are normalized because retrieval will use cosine
         similarity, where higher similarity means greater relevance.

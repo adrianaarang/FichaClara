@@ -5,7 +5,13 @@ Responsible: P2 · Embeddings, vector database and retrieval.
 
 from unittest.mock import patch
 
+from src.common.config import settings
 from src.indexing.embeddings import DEFAULT_EMBEDDING_MODEL, get_embeddings
+
+
+def test_default_embedding_model_matches_settings():
+    """The P2 default model should come from the central application settings."""
+    assert DEFAULT_EMBEDDING_MODEL == settings.EMBEDDING_MODEL
 
 
 def test_get_embeddings_uses_expected_configuration():
