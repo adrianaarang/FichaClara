@@ -1,7 +1,6 @@
 # src/generation/rag_chain.py
-import re
 import logging
-from typing import Any
+import re
 
 from langchain_core.output_parsers import StrOutputParser
 
@@ -113,8 +112,8 @@ class RAGChain:
                 "contexto": contexto_str,
                 "pregunta": texto_pregunta
             })
-        except Exception as exc:
-            logger.error(f"Error al invocar la cadena LCEL: {exc}", exc_info=True)
+        except Exception:
+            logger.exception("Error al invocar la cadena LCEL")
             return QueryResponse(
                 respuesta="Error temporal al consultar el modelo de lenguaje.",
                 encontrado=False,

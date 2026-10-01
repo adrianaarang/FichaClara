@@ -24,7 +24,7 @@ def health():
 @router.post("/query", response_model=QueryResponse, tags=["RAG"])
 def query(
     request: QueryRequest,
-    rag_chain: RAGChain = Depends(get_rag_chain),
+    rag_chain: RAGChain = Depends(get_rag_chain), # noqa: B008
 ):
     return rag_chain.answer(request)
 
