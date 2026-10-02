@@ -99,3 +99,27 @@ def test_resultado_cumple_el_contrato():
     assert isinstance(r.contiene_pii, bool)
     assert isinstance(r.tipos, list)
     assert isinstance(r.texto_enmascarado, str)
+
+
+@pytest.mark.parametrize(
+    "texto, tipo_esperado, tipo_no_esperado",
+    [
+        ("DNI 12345678Z", "dni", "dni_posible"),  # letra correcta
+        ("DNI 12345678A", "dni_posible", "dni"),  # letra incorrecta
+        ("NIE X1234567L", "nie", "nie_posible"),  # letra correcta
+        ("NIE X1234567A", "nie_posible", "nie"),  # letra incorrecta
+        ("NIE y1234567z", "nie_posible", "nie"),  # minúsculas, letra incorrecta
+    ],
+)
+def test_la_letra_de_control_decide_el_tipo(texto, tipo_esperado, tipo_no_esperado):
+    r = check_pii(texto)
+    assert tipo_esperado in r.tipos
+    assert tipo_no_esperado not in r.tipos
+
+
+@pytest.mark.parametrize("texto", ["DNI 12345678A", "NIE X1234567A", "NIE X1234567-A"])
+def test_un_documento_con_letra_incorrecta_se_enmascara_igualmente(texto):
+    r = check_pii(texto)
+    assert r.contiene_pii
+    assert "1234567" not in r.texto_enmascarado
+    assert MASCARA in r.texto_enmascarado
