@@ -45,7 +45,7 @@ pacientes.
 
 | Riesgo | Medida | Límite |
 |---|---|---|
-| El usuario escribe datos de un paciente en la pregunta | `check_pii` detecta DNI/NIE (con validación de la letra), teléfono, email, nº de historia clínica, tarjeta sanitaria, fecha de nacimiento y nombres, y los sustituye por `[DATO]` antes de llamar al LLM. La API devuelve `aviso_pii = true` y el frontend lo muestra | Es una detección por reglas, no un anonimizador certificado. No enmascara la edad, el diagnóstico ni el nombre de un centro. Un nombre sin pista ni nombre de pila común puede pasar |
+| El usuario escribe datos de un paciente en la pregunta | `check_pii` detecta DNI/NIE (comprueba la letra de control; si no cuadra lo enmascara igualmente y lo marca como `dni_posible`/`nie_posible`), teléfono, email, nº de historia clínica, tarjeta sanitaria, fecha de nacimiento y nombres, y los sustituye por `[DATO]` antes de llamar al LLM. La API devuelve `aviso_pii = true` y el frontend lo muestra | Es una detección por reglas, no un anonimizador certificado. No enmascara la edad, el diagnóstico ni el nombre de un centro. Un nombre sin pista ni nombre de pila común puede pasar |
 | Un documento subido contiene datos personales | Aviso en la subida; modo local recomendado; se puede borrar con `DELETE /documents/{id}` | No se analiza el contenido del documento |
 | Las preguntas quedan en logs del servidor o del proveedor | Recomendación de despliegue: no registrar el texto de las preguntas (solo métricas) y revisar las condiciones de retención del proveedor | Depende de la configuración del despliegue |
 | Claves de API en el repositorio | `.env` y `data/` en `.gitignore`; la CI usa una clave falsa y no llama a APIs externas | — |
