@@ -8,7 +8,9 @@ Contrato (src/common/schemas.py):  check_pii(texto) -> PiiResult
     texto_enmascarado la pregunta con cada dato sustituido por [DATO]
 
 Qué detecta (regex + reglas, sin dependencias externas):
-    dni, nie, telefono, email, historia_clinica (NHC), tarjeta_sanitaria,
+    dni, nie (se comprueba la letra de control: si no cuadra el dato se enmascara
+    igualmente y el tipo es dni_posible / nie_posible), telefono, email,
+    historia_clinica (NHC), tarjeta_sanitaria,
     fecha_nacimiento (solo si va tras «nació el», «fecha de nacimiento»...) y
     nombre (tras «paciente», «residente», «don»... o nombre de pila + apellidos).
 
@@ -202,6 +204,23 @@ def _filtro_activo() -> bool:
     }
 
 
+def _tipo_documento(tipo: str, m: re.Match[str]) -> str:
+    """Comprueba la letra de control de DNI y NIE y devuelve el tipo final.
+
+    Letra correcta -> «dni» / «nie». Letra que no cuadra -> «dni_posible» /
+    «nie_posible»: se enmascara igualmente (puede ser un DNI con una errata y es más
+    seguro taparlo que dejarlo pasar), pero el tipo avisa de que no es un documento
+    válido. Cualquier otro tipo se devuelve sin cambios.
+    """
+    if tipo == "dni":
+        valido = _letra_dni_valida(m.group(1), m.group(2))
+    elif tipo == "nie":
+        valido = _nie_valido(re.sub(r"[\s-]", "", m.group(1)))
+    else:
+        return tipo
+    return tipo if valido else f"{tipo}_posible"
+
+
 def _detectar(texto: str) -> list[tuple[int, int, str]]:
     """Devuelve tramos (inicio, fin, tipo) sin solapes; gana el primero en prioridad."""
     tramos: list[tuple[int, int, str]] = []
@@ -213,7 +232,7 @@ def _detectar(texto: str) -> list[tuple[int, int, str]]:
                 ini, fin = m.span()
             if any(ini < f and fin > i for i, f, _ in tramos):
                 continue
-            tramos.append((ini, fin, tipo))
+            tramos.append((ini, fin, _tipo_documento(tipo, m)))
     return sorted(tramos)
 
 
