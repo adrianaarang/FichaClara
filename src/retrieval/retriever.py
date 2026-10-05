@@ -14,6 +14,7 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
+from src.common.config import settings
 from src.common.schemas import Chunk, ChunkMetadata, RetrievedChunk
 from src.indexing.vector_store import (
     DEFAULT_CHROMA_COLLECTION,
@@ -22,7 +23,8 @@ from src.indexing.vector_store import (
 )
 from src.retrieval.query_parser import DEFAULT_CATALOG_PATH, find_medications
 
-DEFAULT_K = 5
+DEFAULT_K = settings.RETRIEVER_K
+DEFAULT_RELEVANCE_THRESHOLD = settings.RELEVANCE_THRESHOLD
 
 
 def _normalize_relevance_score(score: float) -> float:
@@ -52,7 +54,7 @@ def retrieve(
     question: str,
     k: int = DEFAULT_K,
     *,
-    relevance_threshold: float | None = None,
+    relevance_threshold: float | None = DEFAULT_RELEVANCE_THRESHOLD,
     vector_store: Chroma | None = None,
     embedding_function: Embeddings | None = None,
     persist_directory: str | Path = DEFAULT_CHROMA_DIR,
@@ -74,8 +76,7 @@ def retrieve(
         question: User question to retrieve context for.
         k: Maximum number of chunks to retrieve.
         relevance_threshold: Minimum relevance score accepted. ``None`` keeps
-            all top-k results and is used until the threshold is calibrated
-            against the golden set.
+            all top-k results without applying a global score threshold.
         vector_store: Optional existing Chroma instance, useful for dependency
             injection and tests.
         embedding_function: Embedding model used when opening Chroma.

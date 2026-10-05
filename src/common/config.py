@@ -21,13 +21,14 @@ class Settings(BaseSettings):
 
     # Parámetros por defecto de Retrieval y API
     RETRIEVER_K: int = 5
-    RELEVANCE_THRESHOLD: float = 0.3
+    RELEVANCE_THRESHOLD: float | None = None
     API_URL: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
-        extra="ignore"
+        env_ignore_empty=True,
+        extra="ignore",
     )
 
 

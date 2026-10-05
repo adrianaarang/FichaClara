@@ -10,11 +10,12 @@ from typing import Any
 from langchain_chroma import Chroma
 from langchain_core.embeddings import Embeddings
 
+from src.common.config import settings
 from src.common.schemas import Chunk
 from src.indexing.embeddings import get_embeddings
 
-DEFAULT_CHROMA_DIR = "data/chroma"
-DEFAULT_CHROMA_COLLECTION = "fichas_tecnicas"
+DEFAULT_CHROMA_DIR = settings.CHROMA_DIR
+DEFAULT_CHROMA_COLLECTION = settings.CHROMA_COLLECTION
 
 
 def get_vector_store(
