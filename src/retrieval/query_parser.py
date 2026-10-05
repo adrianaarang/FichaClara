@@ -119,28 +119,24 @@ def _load_catalog(path: str) -> tuple[_CatalogEntry, ...]:
     return tuple(entries)
 
 
-def detect_medication(
+def find_medications(
     question: str,
     catalog_path: str | Path = DEFAULT_CATALOG_PATH,
-) -> MedicationMatch | None:
-    """Detect one unambiguous medication mentioned in a question.
+) -> tuple[MedicationMatch, ...]:
+    """Return every distinct known medication mentioned in the question.
 
-    Matching considers:
-    - the active ingredient used to build the catalogue;
-    - the official active ingredient reported by CIMA;
-    - the commercial medication name.
-
-    Matching is performed on complete words after normalizing case and
-    accents. If no medication is found, or more than one medication is
-    detected, ``None`` is returned so retrieval does not apply an unsafe
-    metadata filter.
+    When several aliases identify the same registration number, only the most
+    specific alias is kept.
     """
     normalized_question = normalize_text(question)
 
     if not normalized_question:
-        return None
+        return ()
 
-    matches: list[tuple[_CatalogEntry, str, MatchType]] = []
+    matches_by_registration: dict[
+        str,
+        tuple[_CatalogEntry, str, MatchType],
+    ] = {}
 
     for entry in _load_catalog(str(Path(catalog_path))):
         aliases: tuple[tuple[str, MatchType], ...] = (
@@ -159,33 +155,45 @@ def detect_medication(
         )
 
         for alias, match_type in aliases:
-            if _contains_phrase(normalized_question, alias):
-                matches.append((entry, alias, match_type))
+            if not _contains_phrase(normalized_question, alias):
+                continue
 
-    if not matches:
-        return None
+            candidate = (entry, alias, match_type)
+            previous = matches_by_registration.get(entry.registration_number)
 
-    registration_numbers = {
-        entry.registration_number for entry, _, _ in matches
-    }
+            if previous is None or (
+                len(alias.split()),
+                len(alias),
+            ) > (
+                len(previous[1].split()),
+                len(previous[1]),
+            ):
+                matches_by_registration[entry.registration_number] = candidate
 
-    if len(registration_numbers) != 1:
-        return None
-
-    # Prefer the most specific alias when several aliases identify
-    # the same medication.
-    entry, alias, match_type = max(
-        matches,
-        key=lambda match: (
-            len(match[1].split()),
-            len(match[1]),
-        ),
+    return tuple(
+        MedicationMatch(
+            registration_number=entry.registration_number,
+            name=entry.name,
+            active_ingredients=entry.active_ingredients,
+            matched_alias=alias,
+            match_type=match_type,
+        )
+        for entry, alias, match_type in matches_by_registration.values()
     )
 
-    return MedicationMatch(
-        registration_number=entry.registration_number,
-        name=entry.name,
-        active_ingredients=entry.active_ingredients,
-        matched_alias=alias,
-        match_type=match_type,
-    )
+
+def detect_medication(
+    question: str,
+    catalog_path: str | Path = DEFAULT_CATALOG_PATH,
+) -> MedicationMatch | None:
+    """Detect exactly one known medication mentioned in a question.
+
+    Returns ``None`` when no medication is known or when several distinct
+    medications are mentioned.
+    """
+    matches = find_medications(question, catalog_path)
+
+    if len(matches) != 1:
+        return None
+
+    return matches[0]

@@ -74,9 +74,10 @@ def test_retrieve_filters_by_detected_medication(catalog_path: Path) -> None:
     assert result[0].score == pytest.approx(0.91)
 
 
-def test_retrieve_without_medication_uses_no_filter(catalog_path: Path) -> None:
+def test_retrieve_without_known_medication_returns_empty(
+    catalog_path: Path,
+) -> None:
     store = MagicMock()
-    store.similarity_search_with_relevance_scores.return_value = []
 
     result = retrieve(
         "¿Qué efectos adversos graves aparecen en las fichas?",
@@ -84,13 +85,8 @@ def test_retrieve_without_medication_uses_no_filter(catalog_path: Path) -> None:
         catalog_path=catalog_path,
     )
 
-    store.similarity_search_with_relevance_scores.assert_called_once_with(
-        "¿Qué efectos adversos graves aparecen en las fichas?",
-        k=5,
-        filter=None,
-    )
-
     assert result == []
+    store.similarity_search_with_relevance_scores.assert_not_called()
 
 
 def test_retrieve_applies_relevance_threshold(catalog_path: Path) -> None:
@@ -201,3 +197,29 @@ def test_invalid_threshold_raises(
             vector_store=MagicMock(),
             catalog_path=catalog_path,
         )
+
+
+def test_retrieve_with_multiple_medications_uses_global_search(
+    catalog_path: Path,
+) -> None:
+    store = MagicMock()
+    document = make_document()
+
+    store.similarity_search_with_relevance_scores.return_value = [
+        (document, 0.85),
+    ]
+
+    result = retrieve(
+        "¿Interacciona Januvia con omeprazol?",
+        k=5,
+        vector_store=store,
+        catalog_path=catalog_path,
+    )
+
+    store.similarity_search_with_relevance_scores.assert_called_once_with(
+        "¿Interacciona Januvia con omeprazol?",
+        k=5,
+        filter=None,
+    )
+
+    assert len(result) == 1

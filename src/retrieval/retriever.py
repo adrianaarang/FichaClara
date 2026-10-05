@@ -20,7 +20,7 @@ from src.indexing.vector_store import (
     DEFAULT_CHROMA_DIR,
     get_vector_store,
 )
-from src.retrieval.query_parser import DEFAULT_CATALOG_PATH, detect_medication
+from src.retrieval.query_parser import DEFAULT_CATALOG_PATH, find_medications
 
 DEFAULT_K = 5
 
@@ -101,20 +101,26 @@ def retrieve(
     if relevance_threshold is not None and not 0.0 <= relevance_threshold <= 1.0:
         raise ValueError("relevance_threshold must be between 0 and 1")
 
+    medications = find_medications(
+        question,
+        catalog_path=catalog_path,
+    )
+
+    # No known medication means there is no grounded technical sheet to search.
+    if not medications:
+        return []
+
     store = vector_store or get_vector_store(
         embedding_function=embedding_function,
         persist_directory=persist_directory,
         collection_name=collection_name,
     )
 
-    medication = detect_medication(
-        question,
-        catalog_path=catalog_path,
-    )
-
+    # One medication can be safely restricted to its technical sheet.
+    # Multiple medications keep the global search so interaction questions work.
     metadata_filter = (
-        {"nregistro": medication.registration_number}
-        if medication is not None
+        {"nregistro": medications[0].registration_number}
+        if len(medications) == 1
         else None
     )
 
