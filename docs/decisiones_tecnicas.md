@@ -4,11 +4,52 @@
 
 ## ADR-01 Modelo de embeddings (P2)
 
-_TODO_
+**Contexto**: el retriever necesita representar en el mismo espacio semántico preguntas en español y fragmentos de fichas técnicas de medicamentos. El objetivo orientativo del proyecto es alcanzar un `hit rate@5 >= 0,85` sobre el golden set de retrieval.
+
+**Decisión**: usar `BAAI/bge-m3` como modelo de embeddings, con normalización de vectores y similitud coseno. El modelo se ejecuta en CPU en el entorno actual.
+
+**Alternativa evaluada**: `intfloat/multilingual-e5-base`, usando los prefijos recomendados `query: ` para preguntas y `passage: ` para documentos. Se construyó un índice independiente porque ambos modelos generan espacios vectoriales distintos.
+
+**Experimento**: sobre el mismo corpus de 18.143 chunks y el mismo golden set, sin aplicar un umbral de relevancia:
+
+| Modelo | hit@1 | hit@3 | hit@5 | MRR | acierto ficha@5 |
+|---|---:|---:|---:|---:|---:|
+| `BAAI/bge-m3` | 60,0 % | 80,0 % | **86,7 %** | **0,7111** | 100,0 % |
+| `intfloat/multilingual-e5-base` | 60,0 % | 76,7 % | 80,0 % | 0,6844 | 100,0 % |
+
+Como referencias adicionales, BM25 obtuvo `hit@5 = 60,0 %` y `MRR = 0,4456`. También se probó una combinación `bge-m3 + BM25` mediante Reciprocal Rank Fusion, que obtuvo `hit@5 = 80,0 %` y `MRR = 0,6528`, por lo que no mejoró al retriever vectorial puro.
+
+**Decisión sobre el umbral**: no fijar por ahora un `RELEVANCE_THRESHOLD` global y mantenerlo en `None`. Las distribuciones de score de preguntas respondibles y preguntas fuera del corpus se solapan: el mayor score observado en una pregunta de rechazo fue `0,7081`, mientras que una pregunta respondible llegó a `0,5788`. Por tanto, un único corte por similitud produciría falsos rechazos antes de separar de forma fiable las consultas fuera de alcance.
+
+Para las consultas sin un medicamento conocido se usa en su lugar el catálogo: con este guard el `hit@5` se mantiene en 86,7 %, el rechazo correcto pasa de 0 % a 100 % y los falsos rechazos permanecen en 0 %. Las consultas que mencionan varios medicamentos conocidos mantienen búsqueda global para permitir preguntas de interacción.
+
+**Consecuencias**:
+- Positivas: `bge-m3` es el único modelo evaluado que supera el objetivo orientativo de `hit rate@5 >= 0,85`; identifica la ficha correcta en el 100 % de las preguntas respondibles del golden set.
+- Negativas: el ranking dentro de una ficha todavía falla en algunas secciones, especialmente en preguntas de indicaciones, contraindicaciones y posología. Las preguntas Q04, Q20, Q24 y Q28 no recuperan la sección esperada en el top 5.
+- El índice debe reconstruirse si cambia el modelo de embeddings.
+- Estos resultados son preliminares mientras las preguntas respondibles del golden set sigan pendientes de verificación manual contra los PDF.
 
 ## ADR-02 Base vectorial (P2)
 
-_TODO_
+**Contexto**: el índice debe ser persistente, funcionar localmente, soportar filtrado por metadatos de la ficha técnica y permitir reconstrucción y actualización sin duplicar chunks.
+
+**Decisión**: usar Chroma como base vectorial persistente, integrada mediante `langchain-chroma`, con distancia coseno.
+
+Cada chunk se almacena usando `chunk_id` como identificador estable. La capa de indexación soporta:
+- alta o actualización de chunks por `chunk_id`;
+- borrado de todos los chunks asociados a un documento;
+- listado de documentos indexados;
+- filtros por metadatos, especialmente `nregistro`.
+
+El retriever aplica el filtro por `nregistro` cuando detecta exactamente un medicamento conocido. Si detecta varios medicamentos conocidos, mantiene búsqueda global para permitir consultas de interacción. Si no detecta ningún medicamento del catálogo, devuelve una lista vacía sin consultar Chroma.
+
+**Justificación**: Chroma cubre los requisitos definidos para P2 sin introducir infraestructura externa: persistencia local, almacenamiento de metadatos, filtrado y compatibilidad directa con LangChain. En este proyecto no se realizó un benchmark comparativo entre distintos motores vectoriales, por lo que la decisión se basa en adecuación a los requisitos de la arquitectura y no en una afirmación de superioridad frente a otras bases vectoriales.
+
+**Consecuencias**:
+- Positivas: índice local y reproducible, filtrado por ficha técnica y actualizaciones idempotentes mediante identificadores estables.
+- Positivas: permite mantener índices independientes para modelos de embeddings distintos.
+- Negativas: el índice está ligado al modelo con el que fue construido; no puede consultarse correctamente con embeddings de otro modelo.
+- Negativas: cambiar de modelo requiere crear o reconstruir un índice compatible.
 
 ## ADR-03 Orquestador y LLM (P3)
 
