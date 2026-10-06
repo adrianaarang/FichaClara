@@ -4,7 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from src.retrieval.query_parser import detect_medication, normalize_text
+from src.retrieval.query_parser import (
+    detect_medication,
+    find_medications,
+    normalize_text,
+)
 
 CATALOG_CONTENT = """principio_activo_buscado,nregistro,nombre,principios_activos
 omeprazol,64004,GASTROMEL 20 MG CAPSULAS DURAS GASTRORRESISTENTES EFG,OMEPRAZOL
@@ -96,3 +100,23 @@ def test_missing_catalog_raises_file_not_found(tmp_path: Path) -> None:
 
     with pytest.raises(FileNotFoundError, match="Medication catalogue not found"):
         detect_medication("omeprazol", missing_path)
+
+
+def test_find_medications_returns_multiple_known_medications(
+    catalog_path: Path,
+) -> None:
+    results = find_medications(
+        "Compara loratadina con desloratadina",
+        catalog_path,
+    )
+
+    assert {result.registration_number for result in results} == {
+        "58518",
+        "00160065",
+    }
+
+
+def test_find_medications_returns_empty_when_none_are_known(
+    catalog_path: Path,
+) -> None:
+    assert find_medications("¿Cuál es la capital de Francia?", catalog_path) == ()

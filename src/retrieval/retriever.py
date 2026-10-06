@@ -14,15 +14,17 @@ from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_core.embeddings import Embeddings
 
+from src.common.config import settings
 from src.common.schemas import Chunk, ChunkMetadata, RetrievedChunk
 from src.indexing.vector_store import (
     DEFAULT_CHROMA_COLLECTION,
     DEFAULT_CHROMA_DIR,
     get_vector_store,
 )
-from src.retrieval.query_parser import DEFAULT_CATALOG_PATH, detect_medication
+from src.retrieval.query_parser import DEFAULT_CATALOG_PATH, find_medications
 
-DEFAULT_K = 5
+DEFAULT_K = settings.RETRIEVER_K
+DEFAULT_RELEVANCE_THRESHOLD = settings.RELEVANCE_THRESHOLD
 
 
 def _normalize_relevance_score(score: float) -> float:
@@ -52,7 +54,7 @@ def retrieve(
     question: str,
     k: int = DEFAULT_K,
     *,
-    relevance_threshold: float | None = None,
+    relevance_threshold: float | None = DEFAULT_RELEVANCE_THRESHOLD,
     vector_store: Chroma | None = None,
     embedding_function: Embeddings | None = None,
     persist_directory: str | Path = DEFAULT_CHROMA_DIR,
@@ -74,8 +76,7 @@ def retrieve(
         question: User question to retrieve context for.
         k: Maximum number of chunks to retrieve.
         relevance_threshold: Minimum relevance score accepted. ``None`` keeps
-            all top-k results and is used until the threshold is calibrated
-            against the golden set.
+            all top-k results without applying a global score threshold.
         vector_store: Optional existing Chroma instance, useful for dependency
             injection and tests.
         embedding_function: Embedding model used when opening Chroma.
@@ -101,20 +102,26 @@ def retrieve(
     if relevance_threshold is not None and not 0.0 <= relevance_threshold <= 1.0:
         raise ValueError("relevance_threshold must be between 0 and 1")
 
+    medications = find_medications(
+        question,
+        catalog_path=catalog_path,
+    )
+
+    # No known medication means there is no grounded technical sheet to search.
+    if not medications:
+        return []
+
     store = vector_store or get_vector_store(
         embedding_function=embedding_function,
         persist_directory=persist_directory,
         collection_name=collection_name,
     )
 
-    medication = detect_medication(
-        question,
-        catalog_path=catalog_path,
-    )
-
+    # One medication can be safely restricted to its technical sheet.
+    # Multiple medications keep the global search so interaction questions work.
     metadata_filter = (
-        {"nregistro": medication.registration_number}
-        if medication is not None
+        {"nregistro": medications[0].registration_number}
+        if len(medications) == 1
         else None
     )
 
