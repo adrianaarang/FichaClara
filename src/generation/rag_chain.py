@@ -6,41 +6,26 @@ from langchain_core.output_parsers import StrOutputParser
 
 from src.common.config import settings
 from src.common.schemas import (
-    Chunk,
-    ChunkMetadata,
     Fuente,
-    PiiResult,
     QueryRequest,
     QueryResponse,
     RetrievedChunk,
 )
 from src.generation.llm_providers import get_llm
 from src.generation.prompts import FRASE_NO_CONSTA, RAG_PROMPT, formatear_contexto
+from src.guardrails.pii_filter import check_pii  # P5: filtro de datos personales
+from src.retrieval.retriever import retrieve  # P2: búsqueda en ChromaDB
 
 logger = logging.getLogger(__name__)
 
-
-def fake_retrieve(pregunta: str, k: int = 4) -> list[RetrievedChunk]:
-    meta = ChunkMetadata(
-        chunk_id="FT_1234::4.2::1",
-        doc_id="FT_1234",
-        tipo_documento="ficha_tecnica",
-        nombre="Paracetamol 1g",
-        seccion="4.2",
-        titulo_seccion="Posología y administración",
-        pagina_inicio=1,
-        pagina_fin=1,
-        orden=0,
-    )
-    chunk = Chunk(
-        texto="La dosis habitual en adultos es de 1g cada 8 horas según necesidad.",
-        metadata=meta,
-    )
-    return [RetrievedChunk(chunk=chunk, score=0.92)]
+# Algunos modelos (p. ej. gpt-oss de Groq) citan con corchetes asiáticos, 【1】 o 【1†L3-L5】,
+# en vez de [1]. El frontend y la validación de citas solo entienden [n].
+_RE_CITA_ASIATICA = re.compile(r"【\s*(\d+)[^】]*】")
 
 
-def fake_check_pii(pregunta: str) -> PiiResult:
-    return PiiResult(contiene_pii=False, tipos=[], texto_enmascarado=pregunta)
+def normalizar_citas(texto: str) -> str:
+    """Convierte 【n】 (y 【n†...】) en [n], sea cual sea el modelo que haya respondido."""
+    return _RE_CITA_ASIATICA.sub(r"[\1]", texto)
 
 
 class RAGChain:
@@ -76,16 +61,16 @@ class RAGChain:
 
     def answer(self, request: QueryRequest) -> QueryResponse:
         # 1. Filtro PII
-        pii_res = fake_check_pii(request.pregunta)
+        pii_res = check_pii(request.pregunta)
         texto_pregunta = (
             pii_res.texto_enmascarado
             if pii_res.contiene_pii
             else request.pregunta
         )
 
-        # 2. Retrieval
+        # 2. Retrieval (siempre con la pregunta ya enmascarada)
         k_val = request.k if request.k is not None else settings.RETRIEVER_K
-        retrieved = fake_retrieve(texto_pregunta, k=k_val)
+        retrieved = retrieve(texto_pregunta, k=k_val)
 
         # Criterio de Aceptación: Sin contexto -> no invocar LLM
         if not retrieved:
@@ -124,7 +109,7 @@ class RAGChain:
 
         # 5. Post-procesamiento
         indices_validos = {f.indice for f in fuentes}
-        respuesta_limpia = self._limpiar_citas_fantasmas(respuesta_texto, indices_validos)
+        respuesta_limpia = self._limpiar_citas_fantasmas(normalizar_citas(respuesta_texto), indices_validos)
 
         return QueryResponse(
             respuesta=respuesta_limpia,
