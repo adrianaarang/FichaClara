@@ -73,6 +73,8 @@
   let docs = [];
   let ocupado = false;
   let ultimoNuevo = null;
+  let docsFallo = false;
+  let docsFallaron = false;
 
   const refs = {
     mensajes: $("mensajes"), bienvenida: $("bienvenida"), form: $("form"), pregunta: $("pregunta"),
@@ -113,6 +115,8 @@
     try {
       await api.health();
       caja.className = "estado ok"; txt.textContent = "API conectada";
+      if (docsFallo) cargarDocs(); // la API ha vuelto: reintenta la lista que había fallado
+      if (docsFallaron) cargarDocs(); // la API acaba de volver: reintenta la lista de documentos
     } catch {
       caja.className = "estado caido"; txt.textContent = "Sin conexión con la API";
     }
@@ -403,12 +407,20 @@
   async function cargarDocs() {
     try {
       docs = (await api.listDocuments()) || [];
+      docsFallo = false;
+      docsFallaron = false;
       docs.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
       pintarDocs();
     } catch (e) {
+      docsFallaron = true;
+      refs.resumen.hidden = true;
       refs.lista.replaceChildren();
       const v = el("li", "vacio");
-      v.innerHTML = '<span class="emoji">🔌</span>No puedo cargar los documentos.';
+      v.innerHTML = '<span class="emoji">🔌</span>No puedo cargar los documentos.<br>';
+      const b = el("button", "sug", "Reintentar");
+      b.type = "button";
+      b.addEventListener("click", cargarDocs);
+      v.appendChild(b);
       refs.lista.appendChild(v);
     }
   }
