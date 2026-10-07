@@ -18,9 +18,9 @@ flowchart LR
     end
 
     subgraph Consulta["Flujo de consulta (cada pregunta)"]
-        F["Frontend Streamlit<br/>chat · fuentes · subida"] -->|POST /query| G["API FastAPI<br/>src/api"]
+        F["Frontend web<br/>HTML · CSS · JavaScript"] -->|POST /query| G["API FastAPI<br/>src/api"]
         G --> H["Filtro PII<br/>src/guardrails"]
-        H --> I["Query parser + retriever<br/>top-k · umbral · filtro por ficha"]
+        H --> I["Query parser + retriever<br/>Top 5 · catálogo · filtro por ficha"]
         I <-->|búsqueda vectorial| E
         I -->|sin fragmentos| J["encontrado = false<br/>sin llamar al LLM"]
         I -->|con fragmentos| K["Cadena RAG LangChain<br/>prompt de grounding"]
@@ -54,10 +54,13 @@ flowchart LR
 1. El frontend envía la pregunta a `POST /query`.
 2. `check_pii` (P5) sustituye los datos personales por `[DATO]`. Si detecta alguno, la
    respuesta llevará `aviso_pii = true` y al LLM solo llega el texto enmascarado.
-3. El query parser detecta si la pregunta nombra un medicamento del catálogo para filtrar
-   la búsqueda por su `nregistro`.
-4. El retriever devuelve los k fragmentos más parecidos que superan el umbral de
-   relevancia.
+3. El query parser detecta medicamentos conocidos en el catálogo. Si encuentra uno,
+   filtra la búsqueda por su `nregistro`; si encuentra varios, mantiene una búsqueda
+   global para permitir consultas de interacción; si no encuentra ninguno, devuelve
+   una lista vacía sin consultar Chroma.
+4. El retriever recupera los **5 fragmentos más relevantes**. No se aplica un umbral
+   global de similitud porque la evaluación mostró solapamiento entre las puntuaciones
+   de preguntas respondibles y las que debían rechazarse.
 5. Si no hay ninguno, la API responde `encontrado = false` con un mensaje fijo, sin llamar
    al LLM.
 6. Si los hay, la cadena LangChain construye el prompt de grounding con los fragmentos
@@ -91,5 +94,5 @@ Cada decisión se documenta como ADR en [`decisiones_tecnicas.md`](decisiones_te
 | Base vectorial | ChromaDB persistente, distancia coseno | P2 |
 | Orquestación | LangChain (LCEL) | P3 |
 | LLM | Groq u Ollama, intercambiables por `.env` | P3 |
-| Frontend | Streamlit | P4 |
+| Frontend | HTML + CSS + JavaScript | P4 |
 | Calidad | pytest + ruff en CI, golden set, filtro PII | P5 |
