@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FichaClara · Fichas técnicas con la fuente a la vista</title>
+  <meta name="description" content="Pregunta por una ficha técnica de medicamentos y obtén la respuesta con la fuente citada.">
+  <meta name="theme-color" content="#E6F5F2">
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Mascota reutilizable (con sus animaciones de parpadeo) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="mascota" viewBox="0 0 120 120">
+        <path d="M34 10H72L94 32V90a16 16 0 0 1-16 16H34a16 16 0 0 1-16-16V26a16 16 0 0 1 16-16Z" fill="#23938A"/>
+        <path d="M72 10V22a10 10 0 0 0 10 10H94Z" fill="#B4EADF"/>
+        <rect x="31" y="22" width="24" height="6" rx="3" fill="#fff" opacity=".9"/>
+        <rect x="31" y="32" width="15" height="6" rx="3" fill="#fff" opacity=".6"/>
+        <g class="ojos">
+          <ellipse cx="42" cy="54" rx="4.6" ry="5.4" fill="#173A3D"/>
+          <ellipse cx="66" cy="54" rx="4.6" ry="5.4" fill="#173A3D"/>
+          <circle cx="43.6" cy="52.2" r="1.6" fill="#fff"/>
+          <circle cx="67.6" cy="52.2" r="1.6" fill="#fff"/>
+        </g>
+        <ellipse cx="34.5" cy="64" rx="5" ry="3.2" fill="#F7A58E" opacity=".85"/>
+        <ellipse cx="73.5" cy="64" rx="5" ry="3.2" fill="#F7A58E" opacity=".85"/>
+        <path d="M49 62.5q5 5.5 10 0" fill="none" stroke="#173A3D" stroke-width="3.4" stroke-linecap="round"/>
+        <g class="lupa">
+          <line x1="100" y1="100" x2="108" y2="108" stroke="#0F5C59" stroke-width="9.5" stroke-linecap="round"/>
+          <circle cx="87" cy="86.5" r="17.5" fill="#fff" stroke="#0F5C59" stroke-width="6"/>
+          <g transform="rotate(-45 87 86.5)">
+            <path d="M81 80.5h6v12h-6a6 6 0 0 1 0-12Z" fill="#23938A"/>
+            <path d="M87 80.5h6a6 6 0 0 1 0 12h-6Z" fill="#F4906F"/>
+          </g>
+          <path d="M77 80a11.5 11.5 0 0 1 6-5.5" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>
+        </g>
+      </symbol>
+    </defs>
+  </svg>
+
+  <div class="fondo" aria-hidden="true">
+    <span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+    <span class="pildora p1">💊</span><span class="pildora p2">✨</span><span class="pildora p3">💊</span><span class="pildora p4">✨</span>
+  </div>
+
+  <div class="app">
+    <header class="barra">
+      <button class="icono-btn solo-movil" id="btn-menu" aria-label="Abrir documentos" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+      </button>
+      <img class="logo" src="assets/logo-horizontal.svg" alt="FichaClara">
+      <span class="lema">Fichas técnicas con la fuente a la vista</span>
+      <span class="estado" id="estado" role="status" title="Estado de la API"><i></i><b>Conectando…</b></span>
+    </header>
+
+    <div class="aviso-sanitario" role="note">
+      <span aria-hidden="true">🩺</span>
+      <p><strong>Aviso sanitario.</strong> FichaClara es un buscador sobre documentación oficial, no un sistema de apoyo a la decisión clínica. No sustituye al farmacéutico ni al médico. <strong>Verifica siempre la información en la fuente citada.</strong></p>
+    </div>
+
+    <div class="cuerpo">
+      <aside class="lateral" id="lateral" aria-label="Documentos">
+        <div class="lateral-cab">
+          <h2>Mis documentos</h2>
+          <button class="icono-btn solo-movil" id="btn-cerrar" aria-label="Cerrar">✕</button>
+        </div>
+
+        <label class="zona-subida" id="zona-subida" for="input-archivo">
+          <input type="file" id="input-archivo" accept=".pdf,.txt,.md,application/pdf,text/plain,text/markdown" hidden>
+          <span class="zs-icono"><svg><use href="#mascota"/></svg></span>
+          <strong id="zs-titulo">Suelta aquí un documento</strong>
+          <small id="zs-sub">PDF, TXT o MD · máx. 25 MB</small>
+        </label>
+        <p class="privacidad">🔒 Evita subir documentos con datos de pacientes. Puedes borrarlos cuando quieras.</p>
+
+        <div class="resumen" id="resumen" hidden></div>
+        <input type="search" id="buscar-doc" class="buscar" placeholder="Buscar documento…" aria-label="Buscar documento" autocomplete="off">
+        <ul class="docs" id="lista-docs" aria-live="polite"></ul>
+      </aside>
+      <div class="velo" id="velo"></div>
+
+      <main class="chat" aria-label="Chat">
+        <div class="mensajes" id="mensajes" role="log" aria-live="polite"></div>
+
+        <section class="bienvenida" id="bienvenida">
+          <div class="mascota-grande"><svg><use href="#mascota"/></svg></div>
+          <div class="globo-hola">¡Hola! Soy <b>FichaClara</b> 👋<br>Pregúntame por una ficha técnica y te enseño de dónde sale cada dato.</div>
+          <div class="sugerencias" id="sugerencias"></div>
+        </section>
+
+        <form class="entrada" id="form" autocomplete="off">
+          <textarea id="pregunta" rows="1" maxlength="1000" placeholder="Escribe tu pregunta… p. ej. ¿Cuál es la semivida del Circadin?" aria-label="Tu pregunta"></textarea>
+          <span class="contador" id="contador" hidden></span>
+          <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          </button>
+        </form>
+      </main>
+    </div>
+  </div>
+
+  <div class="tostadas" id="tostadas" aria-live="polite"></div>
+
+  <script src="mock.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
