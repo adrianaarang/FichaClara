@@ -35,9 +35,13 @@ respuesta, salvo las de rechazo.
 | **falsos rechazos** | % de preguntas con respuesta para las que devuelve lista vacía |
 
 Las preguntas pasan antes por el filtro PII, igual que en la API. Con `--barrido-umbral`
-se recalculan hit rate, rechazo correcto y falsos rechazos para umbrales de 0 a 0,90 y se
-sugiere el que maximiza la media de hit rate y rechazo correcto. Sirve a P2 para calibrar
-`RELEVANCE_THRESHOLD`. Para verlo hay que ejecutar el retriever sin umbral propio.
+se recalculan hit rate, rechazo correcto y falsos rechazos para distintos umbrales de
+similitud. Esta herramienta se utilizó para comprobar si existía un corte global capaz de
+separar de forma fiable las preguntas respondibles de las que debían rechazarse.
+
+La evaluación mostró que ambas distribuciones se solapan, por lo que la configuración final
+mantiene `RELEVANCE_THRESHOLD=None` y el rechazo se apoya en el catálogo y en las reglas
+del flujo RAG.
 
 ### Cómo comparar modelos de embeddings (P2)
 
@@ -60,13 +64,16 @@ Dos precauciones para que la comparación sea justa: `multilingual-e5` espera lo
 `relevance_threshold=None` (el valor por defecto de `retrieve()`), porque cada modelo tiene su
 propia escala de puntuaciones.
 
-Comparativas previstas (cada una con su `--etiqueta`, para que los JSON convivan):
+Comparativas utilizadas para la decisión de retrieval:
 
-1. Línea base léxica: `--retriever bm25`.
-2. Modelos de embeddings: `bge-m3` frente a `multilingual-e5-base` (ADR-01, P2).
-3. Búsqueda híbrida vectorial + BM25 (P2).
-4. Chunking: fijo 500, fijo 1.000 y por sección (P1; ya hay resultados de pureza de
-   sección en [`chunking.md`](chunking.md), falta la comparación con hit rate).
+1. Línea base léxica con BM25.
+2. `multilingual-e5-base`.
+3. `BAAI/bge-m3`.
+4. Búsqueda híbrida `bge-m3 + BM25` mediante Reciprocal Rank Fusion.
+
+La estrategia de chunking se evaluó además de forma independiente frente a troceos fijos
+de 500 y 1.000 caracteres. Los resultados de ese experimento están documentados en
+[`chunking.md`](chunking.md).
 
 ## Métricas de generación
 
@@ -99,26 +106,70 @@ sanitario.
 
 ## Resultados
 
-Pendiente de ejecutar. Se rellena tras el checkpoint con las salidas de
-`docs/resultados/`.
-
 ### Retrieval
 
-| Configuración | hit@1 | hit@3 | hit@5 | MRR | acierto sección@1 | rechazo correcto |
-|---|---|---|---|---|---|---|
-| BM25 (línea base) | | | | | | |
-| bge-m3 | | | | | | |
-| multilingual-e5-base | | | | | | |
-| bge-m3 + BM25 (híbrido) | | | | | | |
+La comparación se realizó sobre el mismo corpus de **18.143 chunks** y las mismas
+30 preguntas respondibles del golden set.
 
-Umbral elegido y su justificación: _pendiente (barrido de umbral)_.
+| Configuración | hit@1 | hit@3 | hit@5 | MRR |
+|---|---:|---:|---:|---:|
+| BM25 | 36,7 % | 50,0 % | 60,0 % | 0,4456 |
+| multilingual-E5-base | 60,0 % | 76,7 % | 80,0 % | 0,6844 |
+| BGE-M3 + BM25 | 56,7 % | 70,0 % | 80,0 % | 0,6528 |
+| **BGE-M3** | **60,0 %** | **80,0 %** | **86,7 %** | **0,7111** |
+
+`BAAI/bge-m3` obtuvo el mejor resultado global y se adoptó como modelo principal.
+
+Con BGE-M3, la **ficha correcta apareció dentro del Top 5 en el 100 % de los casos
+respondibles evaluados**. La diferencia respecto al hit@5 completo, 86,7 %, indica que
+los errores restantes se concentran principalmente en el ranking de la sección correcta
+dentro de una ficha ya identificada.
+
+También se evaluó un guard basado en el catálogo para las consultas sin un medicamento
+conocido. Con esta configuración:
+
+- hit@5: **86,7 %**;
+- MRR: **0,7111**;
+- ficha correcta@5: **100 %**;
+- rechazo correcto: **100 %**;
+- falsos rechazos: **0 %**.
+
+### Umbral de similitud
+
+No se adopta un umbral global de relevancia.
+
+El mayor score observado entre las preguntas que debían rechazarse fue **0,7081**,
+mientras que una pregunta respondible llegó a obtener **0,5788**.
+
+Por tanto, un único corte no separa ambos grupos: un umbral suficientemente alto para
+rechazar determinados casos descartaría también preguntas válidas.
+
+La configuración final mantiene:
+
+```text
+RELEVANCE_THRESHOLD=None
+```
+
+y combina catálogo, detección del medicamento, recuperación Top 5 y las reglas
+posteriores del flujo RAG.
+
+> **Nota sobre las métricas:** los resultados de retrieval se consideran preliminares
+> hasta completar la verificación manual de las preguntas respondibles del golden set
+> contra los PDF originales.
 
 ### Generación
 
-| Proveedor | rechazo correcto | falsos rechazos | citas válidas | cita correcta | aviso PII | sin fuga | fiel (manual) |
-|---|---|---|---|---|---|---|---|
-| Groq | | | | | | | |
-| Ollama | | | | | | | |
+La evaluación de generación está implementada en `evaluation/eval_generation.py` y
+permite comprobar automáticamente rechazo, citas, PII y ausencia de determinadas fugas
+contra la API real.
+
+La **fidelidad semántica** de la respuesta no se da por válida mediante una regla
+automática. El proceso genera `docs/resultados/revision_fidelidad.csv` para que una
+persona revise la respuesta frente a los fragmentos citados.
+
+Por este motivo no se publica un porcentaje agregado de fidelidad sin esa revisión humana.
+En un dominio sanitario, la evaluación automática se utiliza como apoyo y no sustituye la
+comprobación manual de la evidencia.
 
 ### Limitaciones del propio golden set
 

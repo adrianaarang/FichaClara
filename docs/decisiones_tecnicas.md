@@ -53,11 +53,87 @@ El retriever aplica el filtro por `nregistro` cuando detecta exactamente un medi
 
 ## ADR-03 Orquestador y LLM (P3)
 
-_TODO_
+**Contexto**: una vez recuperados los fragmentos relevantes, el sistema necesita construir
+una respuesta en lenguaje natural sin permitir que el modelo responda libremente fuera de
+la documentación recuperada. También se buscaba poder utilizar tanto una API comercial
+durante desarrollo y demo como un modelo local en escenarios con mayores requisitos de
+privacidad.
+
+**Decisión**: utilizar **LangChain** y su composición LCEL para construir la cadena RAG.
+El flujo implementado es:
+
+`retrieval → fuentes → prompt de grounding → LLM → postprocesado de citas → respuesta`
+
+El proveedor del modelo se selecciona mediante configuración y puede ser:
+
+- **Groq**, mediante `ChatGroq`;
+- **Ollama**, mediante `ChatOllama` para ejecución local.
+
+Ambos se configuran con `temperature=0.0` para reducir variabilidad.
+
+El prompt de sistema obliga al modelo a responder **exclusivamente con el contexto
+recuperado**, a citar cada afirmación mediante índices `[n]` y a devolver la frase
+controlada «No consta en las fichas técnicas consultadas.» cuando la información no está
+disponible.
+
+Si el retriever no devuelve fragmentos, la cadena no invoca al LLM y responde directamente
+con `encontrado=false`. Después de la generación se normalizan formatos alternativos de
+citas y se eliminan índices que no correspondan a una fuente recuperada.
+
+**Consecuencias**:
+- Positivas: separación clara entre retrieval y generación, y composición sencilla mediante
+  LCEL.
+- Positivas: el proveedor del LLM puede cambiarse por configuración sin modificar el flujo
+  RAG.
+- Positivas: Ollama permite mantener la generación dentro del entorno local cuando la
+  privacidad lo requiera.
+- Positivas: el grounding y la validación de citas reducen el riesgo de respuestas sin
+  evidencia.
+- Negativas: utilizar una API externa sigue requiriendo revisar las condiciones de
+  privacidad y retención del proveedor.
+- Negativas: restringir el prompt reduce el riesgo de alucinación, pero no garantiza por sí
+  solo la fidelidad; las respuestas deben seguir verificándose contra las fuentes.
 
 ## ADR-04 Frontend (P4)
 
-_TODO_
+**Contexto**: el proyecto necesita una interfaz sencilla para realizar preguntas, visualizar
+las fuentes utilizadas y gestionar documentos sin introducir una infraestructura de
+frontend compleja.
+
+**Decisión**: utilizar una interfaz final en **HTML, CSS y JavaScript puros**, servida como
+archivos estáticos y conectada a la API FastAPI.
+
+No requiere `npm`, bundler ni proceso de compilación. Para desarrollo puede servirse con:
+
+```bash
+python -m http.server 5173 --directory frontend/web
+```
+
+La interfaz consume los endpoints reales:
+
+- `POST /query`;
+- `POST /ingest`;
+- `GET /documents`;
+- `DELETE /documents/{id}`;
+- `GET /health`.
+
+Incluye además un modo demo mediante `?mock=1`, que utiliza respuestas simuladas con el
+mismo contrato de datos que la API.
+
+La interfaz muestra las citas `[n]` y las fuentes recuperadas, incluyendo sección, página,
+fragmento, relevancia, fecha de revisión y enlace original. También diferencia visualmente
+las respuestas sin resultado y los avisos relacionados con datos personales.
+
+**Consecuencias**:
+- Positivas: no requiere toolchain de JavaScript ni proceso de compilación.
+- Positivas: ofrece control directo sobre el diseño visual y mantiene la identidad gráfica
+  de FichaClara.
+- Positivas: el modo demo permite enseñar la interfaz aunque el backend o el proveedor del
+  LLM no estén disponibles.
+- Positivas: diseño responsive y soporte básico de accesibilidad, incluido
+  `prefers-reduced-motion`.
+- Negativas: al no utilizar un framework de componentes, una ampliación considerable de la
+  interfaz podría requerir reorganizar el código JavaScript.
 
 ## ADR-05 Chunking (Adriana)
 
