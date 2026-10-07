@@ -1,0 +1,13 @@
+[theme]
+# Primary Medical Blue from the Master Prompt
+primaryColor = "#155EEF"
+
+# Background colors
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F8FAFC"
+
+# Text color
+textColor = "#172033"
+
+# Font matching the CSS we injected
+font = "sans serif"
