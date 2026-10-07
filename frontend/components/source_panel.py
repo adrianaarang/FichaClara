@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+
 def render_source_card(source_dict):
     """
     Renders a polished source card based on the backend contract.

@@ -2,6 +2,7 @@
 
 import streamlit as st
 
+
 def apply_fichaclara_theme():
     st.markdown("""
         <style>

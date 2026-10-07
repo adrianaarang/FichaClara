@@ -1,12 +1,13 @@
 # File: frontend/api_client.py
 
 import os
+from typing import Any
+
 import requests
-from typing import Dict, Any
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
 
-def ask_question(query: str) -> Dict[str, Any]:
+def ask_question(query: str) -> dict[str, Any]:
     """
     Sends natural language query to the FastAPI RAG endpoint (/api/query).
     Enforces graceful degradation on connection failure.

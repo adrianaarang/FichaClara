@@ -1,12 +1,13 @@
 # File: frontend/app.py
 
+import base64
 import os
 import time
-import base64
+from datetime import datetime, timezone
+
 import streamlit as st
-from components.styles import apply_fichaclara_theme
 from components.source_panel import render_source_card
-from datetime import datetime
+from components.styles import apply_fichaclara_theme
 
 # Toggle between Mock and Real API
 USE_MOCK = os.getenv("USE_MOCK_API", "true").lower() == "true"
@@ -29,7 +30,7 @@ def get_image_base64(path):
     try:
         with open(path, "rb") as img_file:
             return base64.b64encode(img_file.read()).decode()
-    except Exception:
+    except OSError:  # <--- Change this line
         return ""
 
 # --- Authentication & URL Parameter Check ---
@@ -336,9 +337,9 @@ def render_workspace():
         )
         if quick_upload:
             st.session_state.documents.insert(0, {
-                "name": quick_upload.name,
+                "name": quick_upload.name, # <--- Change this back to uploaded_file
                 "status": "✓ Indexado",
-                "date": datetime.today().strftime('%d/%m/%Y'),
+                "date": datetime.now(timezone.utc).strftime('%d/%m/%Y'),
                 "sections": 28
             })
             st.success(f"Archivo {quick_upload.name} procesado.")
@@ -386,9 +387,9 @@ def render_document_management():
             progress_bar.progress(100)
             status_container.success("✓ Documento procesado correctamente.")
             st.session_state.documents.insert(0, {
-                "name": uploaded_file.name,
+                "name": uploaded_file.name, # <--- Change this back to uploaded_file
                 "status": "✓ Indexado",
-                "date": datetime.today().strftime('%d/%m/%Y'),
+                "date": datetime.now(timezone.utc).strftime('%d/%m/%Y'),
                 "sections": 28
             })
             time.sleep(1)

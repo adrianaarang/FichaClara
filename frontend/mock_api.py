@@ -1,9 +1,10 @@
 # File: frontend/mock_api.py
 
 import time
-from typing import Dict, Any
+from typing import Any
 
-def ask_question(query: str) -> Dict[str, Any]:
+
+def ask_question(query: str) -> dict[str, Any]:
     """
     Simulates the RAG backend responses across all key test scenarios.
     Type specific keywords into the chat to trigger each scenario:
