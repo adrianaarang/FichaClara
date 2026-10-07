@@ -1,0 +1,4 @@
+estrategia,n_chunks,tamano_medio,pct_chunks_con_mezcla_secciones,pct_secciones_clave_enteras
+fijo_500,33313,329,11.5,10.6
+fijo_1000,15356,724,21.3,17.4
+por_seccion,17895,711,0.0,40.0

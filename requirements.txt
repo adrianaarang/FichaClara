@@ -1,22 +1,51 @@
-# Responsable: P5 (cada persona añade sus dependencias vía PR)
-# Versiones a fijar el día 1
-langchain
-langchain-community
-langchain-chroma
-langchain-huggingface
-langchain-groq
-langchain-ollama
-chromadb
-sentence-transformers
-rank-bm25
-pymupdf
-requests
-pydantic
-pydantic-settings
-fastapi
-uvicorn
-python-multipart
-streamlit
-pytest
-httpx
-ruff
+# =============================================================
+# FichaClara · dependencias del proyecto
+# Python 3.11 o 3.12 recomendado
+# Instalar:  pip install -r requirements.txt
+# Si añades una librería, hazlo en tu rama y súbelo por PR
+# indicando en qué módulo se usa.
+# =============================================================
+
+# --- Orquestación RAG (P2, P3) --------------------------------
+langchain==1.4.2
+langchain-core==1.6.5
+langchain-community==0.4.2        # BM25Retriever, loaders
+langchain-classic==1.0.8          # EnsembleRetriever (búsqueda híbrida)
+langchain-text-splitters==1.1.2   # RecursiveCharacterTextSplitter
+
+# --- Proveedores de LLM (P3) ----------------------------------
+langchain-groq==1.1.3             # API comercial
+langchain-ollama==1.1.0           # modelo local
+
+# --- Embeddings y base vectorial (P2) -------------------------
+langchain-huggingface==1.2.2
+sentence-transformers==6.1.0      # instala PyTorch (descarga grande)
+langchain-chroma==1.1.0
+chromadb==1.5.9
+rank-bm25==0.2.2
+
+# --- Ingesta de documentos (P1) -------------------------------
+pymupdf==1.28.2                   # lectura de PDF con nº de página
+pdfplumber==0.11.10               # opcional: tablas de la sección 4.8
+requests==2.34.2                  # API de CIMA
+
+# --- Configuración y contratos (todos) ------------------------
+pydantic==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
+
+# --- API (P3) -------------------------------------------------
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32          # subida de ficheros en /ingest
+
+# --- Frontend (P4) --------------------------------------------
+streamlit==1.64.0
+
+# --- Evaluación (P5) ------------------------------------------
+pandas==3.0.6
+
+# --- Tests y calidad (P5) -------------------------------------
+pytest==9.1.1
+httpx==0.28.1                     # TestClient de FastAPI
+ruff==0.16.9
