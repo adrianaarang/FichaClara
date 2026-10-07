@@ -19,6 +19,8 @@ from typing import Literal
 
 DEFAULT_CATALOG_PATH = Path("data/catalogo_medicamentos.csv")
 
+_NON_BRAND_PREFIXES = {"acido"}
+
 MatchType = Literal[
     "searched_active_ingredient",
     "official_active_ingredient",
@@ -80,9 +82,9 @@ def _brand_alias(name: str, active_ingredients: str) -> str:
     Example:
         "DIFENADOL RAPID 400 mg ..." -> "difenadol"
 
-    Returns an empty string when the word is too short or is part of the
-    active ingredient (e.g. "IBUPROFENO RATIOPHARM" or "ACIDO ..."), so
-    generic words are not treated as brands.
+    Returns an empty string when the word is too short, is a generic prefix
+    such as "ACIDO", or is part of the active ingredient, so generic words
+    are not treated as brands.
     """
     alias = _commercial_name_alias(name)
     tokens = alias.split()
@@ -90,7 +92,11 @@ def _brand_alias(name: str, active_ingredients: str) -> str:
         return ""
 
     first = tokens[0]
-    if len(first) < 4 or first in normalize_text(active_ingredients).split():
+    if (
+        len(first) < 4
+        or first in _NON_BRAND_PREFIXES
+        or first in normalize_text(active_ingredients).split()
+    ):
         return ""
 
     return first

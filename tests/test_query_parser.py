@@ -16,6 +16,9 @@ morfina,83323,DROPIZOL 10 MG/ML GOTAS ORALES EN SOLUCION,MORFINA
 sitagliptina,07383014,JANUVIA 100 MG COMPRIMIDOS RECUBIERTOS CON PELICULA,SITAGLIPTINA FOSFATO MONOHIDRATO
 loratadina,58518,CLARITYNE 10 mg COMPRIMIDOS,LORATADINA
 desloratadina,00160065,AERIUS 5 MG COMPRIMIDOS RECUBIERTOS CON PELICULA,DESLORATADINA
+ibuprofeno,74559,DIFENADOL RAPID 400 mg GRANULADO PARA SOLUCION ORAL,IBUPROFENO
+valproico,68033,ACIDO VALPROICO ALTAN 400 mg POLVO PARA SOLUCION INYECTABLE EFG,VALPROATO SODIO
+acido folico,11265,ACFOL 5 mg COMPRIMIDOS,ACIDO FOLICO HIDRATO
 """
 
 
@@ -120,3 +123,41 @@ def test_find_medications_returns_empty_when_none_are_known(
     catalog_path: Path,
 ) -> None:
     assert find_medications("¿Cuál es la capital de Francia?", catalog_path) == ()
+
+
+def test_detects_short_brand_alias_for_multiword_commercial_name(
+    catalog_path: Path,
+) -> None:
+    result = detect_medication(
+        "¿Para qué sirve Difenadol?",
+        catalog_path,
+    )
+
+    assert result is not None
+    assert result.registration_number == "74559"
+    assert result.matched_alias == "difenadol"
+    assert result.match_type == "commercial_name"
+
+
+def test_generic_acido_prefix_does_not_create_false_positive(
+    catalog_path: Path,
+) -> None:
+    results = find_medications(
+        "¿Qué información hay sobre ácido fólico?",
+        catalog_path,
+    )
+
+    assert len(results) == 1
+    assert results[0].registration_number == "11265"
+
+
+def test_acido_valproico_remains_detectable(
+    catalog_path: Path,
+) -> None:
+    result = detect_medication(
+        "Información sobre ácido valproico",
+        catalog_path,
+    )
+
+    assert result is not None
+    assert result.registration_number == "68033"
